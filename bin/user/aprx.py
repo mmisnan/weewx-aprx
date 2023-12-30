@@ -1,17 +1,21 @@
 # The code is based on the cwxn (Cumulus WXNow) interface by Matthew Wall.
 # Distributed under terms of the GPLv3
 """
-weewx-aprx - APRX ready output file
+weewxAprx - APRX ready output file
 
 weewx-aprx is an extension for weewx which produces a file which can be
 feed directly into aprx. 
 
-[weewx-aprx]
+[weewxAprx]
     filename = /var/tmp/aprx_wx.txt
+    binding = loop
+    symbol = /_
+    note = ""
+    position = true
 
 [Engine]
     [[Services]]
-        process_services = ..., user.weewx-aprx
+        process_services = ..., user.aprx.weewxAprx
 """
 import time
 
@@ -46,7 +50,7 @@ except ImportError:
     from weeutil.weeutil import log_traceback
 
     def logmsg(level, msg):
-        syslog.syslog(level, 'cwxn: %s' % msg)
+        syslog.syslog(level, 'weewxAprx: %s' % msg)
 
     def logdbg(msg):
         logmsg(syslog.LOG_DEBUG, msg)
@@ -61,10 +65,6 @@ except ImportError:
         log_traceback(prefix=prefix, loglevel=syslog.LOG_ERR)
 
 VERSION = "0.5"
-
-#if weewx.__version__ < "3":
-#    raise weewx.UnsupportedFeature("WeeWX 3 is required, found %s" %
-#                                   weewx.__version__)
 
 def convert(v, metric, group, from_unit_system, to_units):
     ut = weewx.units.getStandardUnitType(from_unit_system, metric)
@@ -109,19 +109,31 @@ def calcDayRain(dbm, ts):
     return val[0]
 
 
-class weewx-aprx(StdService):
+class weewxAprx(StdService):
 
     def __init__(self, engine, config_dict):
-        super(weewx-aprx, self).__init__(engine, config_dict)
+        super(weewxAprx, self).__init__(engine, config_dict)
         loginf("service version is %s" % VERSION)
-        d = config_dict.get('weewx-aprx', {})
-        self.filename = d.get('filename', '/var/tmp/wxnow.txt')
+        d = config_dict.get('weewxAprx', {})
+        self.note = d.get('note',{})
+        self.symbol = d.get('symbol','/_')
+        self.filename = d.get('filename', '/var/tmp/aprx_wx.txt')
+        position = d.get('position', 'true').lower()
+        if position == 'true':
+            self.latitude = ''.join(weeutil.weeutil.latlon_string(
+                self.engine.stn_info.latitude_f,
+                ('N', 'S'), 'lat'))
+            self.longitude = ''.join(weeutil.weeutil.latlon_string(
+                self.engine.stn_info.longitude_f,
+                ('E', 'W'), 'lon'))
+        else:
+            self.latitude = None
+            self.longitude = None
         binding = d.get('binding', 'loop').lower()
         if binding == 'loop':
             self.bind(weewx.NEW_LOOP_PACKET, self.handle_new_loop)
         else:
             self.bind(weewx.NEW_ARCHIVE_RECORD, self.handle_new_archive)
-
         loginf("binding is %s" % binding)
         loginf("output goes to %s" % self.filename)
 
@@ -137,7 +149,7 @@ class weewx-aprx(StdService):
             data = self.calculate(event_data, dbm)
             self.write_data(data)
         except Exception as e:
-            log_traceback_error('cwxn: **** ')
+            log_traceback_error('weewxAprx: **** ')
 
     def calculate(self, packet, archive):
         pu = packet.get('usUnits')
@@ -173,6 +185,11 @@ class weewx-aprx(StdService):
 
     def write_data(self, data):
         fields = []
+        if self.latitude is not None:
+            fields.append("%s" % self.latitude)
+            fields.append("%s" % self.symbol[0])
+            fields.append("%s" % self.longitude)
+            fields.append("%s" % self.symbol[1])
         fields.append("%03d" % int(data['windDir']))
         fields.append("/%03d" % int(data['windSpeed']))
         fields.append("g%03d" % int(data['windGust']))
@@ -184,6 +201,7 @@ class weewx-aprx(StdService):
             data['outHumidity'] = 0
         fields.append("h%03d" % int(data['outHumidity']))
         fields.append("b%05d" % int(data['barometer'] * 10))
+        fields.append("%s" % self.note)
         with open(self.filename, 'w') as f:
             f.write(time.strftime("@%d%H%Mz",
                                   time.localtime(data['dateTime'])))
