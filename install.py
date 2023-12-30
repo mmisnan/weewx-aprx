@@ -5,19 +5,19 @@
 from weecfg.extension import ExtensionInstaller
 
 def loader():
-    return CWXNInstaller()
+    return weewxaprxInstaller()
 
-class CWXNInstaller(ExtensionInstaller):
+class weewxaprxInstaller(ExtensionInstaller):
     def __init__(self):
-        super(CWXNInstaller, self).__init__(
+        super(weewxaprxInstaller, self).__init__(
             version="0.5",
-            name='cwxn',
-            description='Emit a Cumulus wxnow.txt for LOOP data.',
-            author="Matthew Wall",
-            author_email="mwall@users.sourceforge.net",
-            process_services='user.cwxn.CumulusWXNow',
+            name='weewx-aprx',
+            description='Emit a aprs wxnow.txt for LOOP data.',
+            author="Mohd Misnan",
+            author_email="9m2tpt@gmail.com",
+            process_services='user.weewx-aprx',
             config={
                 'CumulusWXNow' : {
                     'filename': '/var/tmp/wxnow.txt'}},
-            files=[('bin/user', ['bin/user/cwxn.py'])]
+            files=[('bin/user', ['bin/user/aprx.py'])]
             )
