@@ -1,25 +1,18 @@
-# Copyright 2014-2020 Matthew Wall
+# The code is based on the cwxn (Cumulus WXNow) interface by Matthew Wall.
 # Distributed under terms of the GPLv3
 """
-Emit loop data to wxnow.txt file with Cumulus format
+weewx-aprx - APRX ready output file
 
-The Cumulus wxnow.txt file format is detailed in the Cumulus Wiki:
-    https://cumuluswiki.org/a/Wxnow.txt
+weewx-aprx is an extension for weewx which produces a file which can be
+feed directly into aprx. 
 
-Put this file in the weewx 'user' directory, then add the following to the
-weewx configuration file:
-
-[CumulusWXNow]
-    filename = /path/to/wxnow.txt
+[weewx-aprx]
+    filename = /var/tmp/aprx_wx.txt
 
 [Engine]
     [[Services]]
-        process_services = ..., user.cwxn.CumulusWXNow
+        process_services = ..., user.weewx-aprx
 """
-
-# FIXME: when value is None, we insert a 0.  but is there something in the
-#        aprs spec that is more appropriate?
-
 import time
 
 import weewx
@@ -69,10 +62,9 @@ except ImportError:
 
 VERSION = "0.5"
 
-if weewx.__version__ < "3":
-    raise weewx.UnsupportedFeature("WeeWX 3 is required, found %s" %
-                                   weewx.__version__)
-
+#if weewx.__version__ < "3":
+#    raise weewx.UnsupportedFeature("WeeWX 3 is required, found %s" %
+#                                   weewx.__version__)
 
 def convert(v, metric, group, from_unit_system, to_units):
     ut = weewx.units.getStandardUnitType(from_unit_system, metric)
@@ -117,12 +109,12 @@ def calcDayRain(dbm, ts):
     return val[0]
 
 
-class CumulusWXNow(StdService):
+class weewx-aprx(StdService):
 
     def __init__(self, engine, config_dict):
-        super(CumulusWXNow, self).__init__(engine, config_dict)
+        super(weewx-aprx, self).__init__(engine, config_dict)
         loginf("service version is %s" % VERSION)
-        d = config_dict.get('CumulusWXNow', {})
+        d = config_dict.get('weewx-aprx', {})
         self.filename = d.get('filename', '/var/tmp/wxnow.txt')
         binding = d.get('binding', 'loop').lower()
         if binding == 'loop':
@@ -193,7 +185,7 @@ class CumulusWXNow(StdService):
         fields.append("h%03d" % int(data['outHumidity']))
         fields.append("b%05d" % int(data['barometer'] * 10))
         with open(self.filename, 'w') as f:
-            f.write(time.strftime("%b %d %Y %H:%M\n",
+            f.write(time.strftime("@%d%H%Mz",
                                   time.localtime(data['dateTime'])))
             f.write(''.join(fields))
             f.write("\n")
