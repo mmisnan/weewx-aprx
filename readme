@@ -1,19 +1,20 @@
-cwxn - Cumulus wxnow
-Copyright 2014-2020 Matthew Wall
-Distributed under terms of the GPLv3
+weewx-aprx - APRX ready output file
 
-cwxn is a weewx extension that emits a wxnow.txt file in the format
-specified by Cumulus
+weewx-aprx is an extension for weewx which produces a file which can be
+feed directly into aprx. The code is based on the cwxn (Cumulus WXNow) 
+interface by Matthew Wall.
 
-  http://wiki.sandaysoft.com/a/Wxnow.txt
+The format is following the APRS Weather format which is available from:
+
+http://www.aprs.net/vm/DOS/PROTOCOL.HTM
 
 Installation instructions:
 
-1) run the installer
+1) run the installer (v5)
 
-setup.py install --extension weewx-cwxn.tgz
+weectl extension install weewx-aprx.tgz
 
 2) restart weewx
 
-sudo /etc/init.d/weewx stop
-sudo /etc/init.d/weewx start
+sudo systemctl stop weewx
+sudo systemctl start weewx
